@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import type { Student, AIAnalysisResult, Recommendation } from '../types';
 import { AttendanceChart, GradesChart } from './charts/Charts';
 import { BrainIcon, BookOpenIcon, ActivityIcon, MinusCircleIcon } from './icons/Icons';
+import { DownloadIcon, Loader2Icon } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface StudentProfileProps {
   student: Student | null;
@@ -41,6 +44,34 @@ const AnalysisLoader = () => (
 
 
 export const StudentProfile: React.FC<StudentProfileProps> = ({ student, analysis, isAnalyzing }) => {
+  const profileRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportToPDF = async () => {
+    if (!profileRef.current || !student) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(profileRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Отчет_${student.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('PDF Export failed:', error);
+      alert('Ошибка при создании PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!student) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
@@ -51,14 +82,29 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, analysi
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-800">{student.name}</h2>
-        <p className="text-lg text-gray-600">Класс: {student.class}</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800">{student.name}</h2>
+          <p className="text-lg text-gray-600">Класс: {student.class}</p>
+        </div>
+        <button
+          onClick={exportToPDF}
+          disabled={isExporting}
+          className="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm"
+        >
+          {isExporting ? (
+            <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <DownloadIcon className="w-4 h-4 mr-2" />
+          )}
+          {isExporting ? 'Создание...' : 'Скачать отчет (PDF)'}
+        </button>
       </div>
 
-      {isAnalyzing ? (
-          <AnalysisLoader />
-      ) : analysis && (
+      <div ref={profileRef} className="space-y-8 bg-white p-4 rounded-lg">
+        {isAnalyzing ? (
+            <AnalysisLoader />
+        ) : analysis && (
         <div className={`p-6 rounded-lg shadow-md border-l-4 ${getRiskColorClasses(analysis.riskLevel)}`}>
             <h3 className="text-xl font-bold mb-2">Результат ИИ-анализа</h3>
             <div className="flex items-center mb-4">
@@ -113,7 +159,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, analysi
           <p className="text-gray-500">Инцидентов не зафиксировано.</p>
         )}
       </div>
-
+      </div>
     </div>
   );
 };

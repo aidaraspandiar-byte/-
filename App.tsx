@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { students as mockStudents, initialActivities } from './services/mockData';
 import { analyzeStudentData } from './services/geminiService';
 import type { Student, ScreeningAnswers, AIAnalysisResult, MicroActivity } from './types';
@@ -16,9 +16,16 @@ import { ConsentPage } from './components/ConsentPage';
 import { LoginPage } from './components/LoginPage';
 import { QRCodePage } from './components/QRCodePage';
 import { UserIcon, DashboardIcon, ScaleIcon, BookOpenIcon, PlusCircleIcon } from './components/icons/Icons';
+import { BellIcon, XIcon } from 'lucide-react';
 
 type View = 'home' | 'student' | 'dashboard' | 'legal' | 'micro' | 'data-entry' | 'main' | 'test' | 'consent' | 'login' | 'qr';
 type UserRole = 'admin' | 'user';
+
+interface Notification {
+  id: number;
+  message: string;
+  type: 'success' | 'info' | 'error';
+}
 
 export default function App() {
   const [students, setStudents] = useState<Student[]>(mockStudents);
@@ -29,15 +36,30 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const addNotification = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const removeNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const selectedStudent = students.find(s => s.id === selectedStudentId) || null;
 
   const handleAddStudents = (newStudents: Student[]) => {
     setStudents(prev => [...prev, ...newStudents]);
+    addNotification(`Добавлено ${newStudents.length} новых учеников`, 'success');
   };
 
   const handleAddActivity = (activity: Omit<MicroActivity, 'id'>) => {
     setActivities(prev => [...prev, { ...activity, id: Date.now() }]);
+    addNotification('Новая активность успешно создана', 'success');
   };
 
   const handleRemoveActivity = (id: number) => {
@@ -67,9 +89,15 @@ export default function App() {
     if (!selectedStudent) return;
     setIsAnalyzing(true);
     setAnalysisResult(null);
-    const result = await analyzeStudentData(selectedStudent, answers);
-    setAnalysisResult(result);
-    setIsAnalyzing(false);
+    try {
+        const result = await analyzeStudentData(selectedStudent, answers);
+        setAnalysisResult(result);
+        addNotification('Анализ успешно завершен', 'success');
+    } catch (error) {
+        addNotification('Ошибка при проведении анализа', 'error');
+    } finally {
+        setIsAnalyzing(false);
+    }
   }, [selectedStudent]);
   
   const navigate = (view: View) => {
@@ -195,7 +223,27 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-100 font-sans relative">
+      {/* Notifications Overlay */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {notifications.map(n => (
+          <div 
+            key={n.id} 
+            className={`pointer-events-auto flex items-center p-4 rounded-lg shadow-xl border-l-4 min-w-[300px] animate-in slide-in-from-right duration-300 ${
+              n.type === 'success' ? 'bg-green-50 border-green-500 text-green-800' :
+              n.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+              'bg-blue-50 border-blue-500 text-blue-800'
+            }`}
+          >
+            <BellIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+            <p className="flex-grow text-sm font-medium">{n.message}</p>
+            <button onClick={() => removeNotification(n.id)} className="ml-3 hover:opacity-70">
+              <XIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {userRole === 'admin' && isAdminAuthenticated && (
           <header className="bg-white shadow-md">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">

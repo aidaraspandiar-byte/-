@@ -353,5 +353,51 @@ export const testQuestions: TestSection[] = [
             ]
         }
     ]
+  },
+  {
+    id: 'digital',
+    title: 'VI. Вопросы о цифровой безопасности и кибербуллинге',
+    questions: [
+        {
+            id: 'digital_1_cyberbullying',
+            text: 'Сталкивался(ась) ли ты когда-нибудь с обидными комментариями или угрозами в интернете?',
+            options: [
+                { text: 'Да, часто', value: 'often' },
+                { text: 'Да, несколько раз', value: 'sometimes' },
+                { text: 'Один раз', value: 'once' },
+                { text: 'Нет, никогда', value: 'never' },
+            ]
+        },
+        {
+            id: 'digital_2_time',
+            text: 'Сколько времени в день ты обычно проводишь в социальных сетях или играх?',
+            options: [
+                { text: 'Более 6 часов', value: 'more_than_6' },
+                { text: '4-6 часов', value: '4_to_6' },
+                { text: '2-4 часа', value: '2_to_4' },
+                { text: 'Менее 2 часов', value: 'less_than_2' },
+            ]
+        },
+        {
+            id: 'digital_3_sleep_impact',
+            text: 'Мешает ли использование гаджетов твоему сну или учебе?',
+            options: [
+                { text: 'Да, сильно мешает', value: 'very_much' },
+                { text: 'Иногда мешает', value: 'sometimes' },
+                { text: 'Почти не мешает', value: 'rarely' },
+                { text: 'Нет, совсем не мешает', value: 'not_at_all' },
+            ]
+        },
+        {
+            id: 'digital_4_strangers',
+            text: 'Общаешься ли ты в интернете с людьми, которых не знаешь в реальной жизни?',
+            options: [
+                { text: 'Да, постоянно', value: 'always' },
+                { text: 'Да, иногда', value: 'sometimes' },
+                { text: 'Редко', value: 'rarely' },
+                { text: 'Нет, никогда', value: 'never' },
+            ]
+        }
+    ]
   }
 ];
